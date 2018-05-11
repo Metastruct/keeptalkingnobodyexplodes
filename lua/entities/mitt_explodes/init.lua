@@ -35,7 +35,7 @@ util.AddNetworkString( "ktne_prompt" )
 
 
 for k,v in pairs( file.Find( "sound/" .. ENT.SndPath .. "/*", "GAME" ) ) do
-	if not v:find"%.bz2$" then 
+	if not v:find"%.bz2$" and not v:lower():find("gameroom",1,true) then 
 		resource.AddFile( "sound/" .. ENT.SndPath .. "/" .. v )
 	end
 end
