@@ -216,21 +216,27 @@ end
 
 
 function ENT:PlayMusic( tension )
-
 	if self.CurMusic then
 		self.CurMusic:Stop()
 		self.CurMusic = nil
 	end
 	if self:GetDefused() then return end
-	self.CurMusic = CreateSound( self, self.Music[tension] )
-	self.CurMusic:Play()
-	self.MusicPlayTime = RealTime()
-
+	local mus_mutex = {}
+	self.mus_mutex = mus_mutex
+	self.lastf = 1
+	sound.PlayURL( GetConVarString"sv_downloadurl" .. '/sound/' .. self.Music[tension],'noplay',function(mus,err)
+		if not mus then MsgN(err) return end
+		if self.mus_mutex ~= mus_mutex then return end
+		self.CurMusic = mus
+		self.CurMusic:SetVolume(0)
+		self.CurMusic:Play()
+		--self.RealMusicPlayTime = RealTime()					
+	end)
+	self.MusicPlayTime = RealTime()	
 end
 function ENT:StopMusic()
-
+		
 	if self.CurMusic then
-		//print( "stopping" )
 		self.CurMusic:Stop()
 		self.CurMusic = nil
 	end
@@ -243,11 +249,23 @@ function ENT:GetNextTensionLevel()
 	return math.max( 2, cur, math.ceil( percent * 7 ) )
 
 end
-
+function ENT:MusicThink()
+	local mus = self.CurMusic
+	if not mus then return end
+	local ep = LocalPlayer():EyePos()
+	local dist = ep:Distance(self:GetPos())
+	local f = math.Remap(dist,256,1024,0,1)
+	f=f>1 and 1 or f<0 and 0 or f
+	local lastf = self.lastf or 1
+	if f==lastf then return end
+	self.lastf = f
+	self.CurMusic:SetVolume(f)
+end
+	
 function ENT:Think()
 
 	self:SharedThink()
-
+	self:MusicThink()
 	local num = self:GetTime( true )
 
 	if math.floor( num ) != self.LastTick and !self:GetPaused() then
